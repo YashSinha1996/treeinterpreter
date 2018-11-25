@@ -165,20 +165,25 @@ def _predict_tree(model, X):
 
     print(unique_leaves.shape, len(leaves))
 
-    for row, leaf in tqdm(enumerate(unique_leaves)):
+    avg_contrib = None
+
+    for row, leaf in tqdm(enumerate(unique_leaves), disable=True):
         path = leaf_to_path[leaf]
 
         contribs = csr_matrix(line_shape)
-        for i in tqdm(range(len(path) - 1)):
+        for i in tqdm(range(len(path) - 1), disable=True):
             contrib = values_list[path[i + 1]] - \
                       values_list[path[i]]
             contribs[feature_index[path[i]]] += contrib
         unique_contributions[leaf] = contribs
+        if avg_contrib is None:
+            avg_contrib = contribs
+        else:
+            avg_contrib += contribs
 
-    # avg_contib = sum([unique_contributions[leaf] for leaf in unique_contributions]) / len(unique_contributions)
-
+    avg_contrib = avg_contrib/len(unique_leaves)
     # return direct_prediction, biases, contributions
-    return direct_prediction, avg_contib
+    return direct_prediction, avg_contrib
 
 
 def _predict_forest(model, X):
@@ -194,7 +199,7 @@ def _predict_forest(model, X):
 
     num_trees = len(model.estimators_)
     first = True
-    cont_per_tree = Parallel(n_jobs=1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
+    cont_per_tree = Parallel(n_jobs=-1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
     for pred, contribution in cont_per_tree:
 
         if first:
