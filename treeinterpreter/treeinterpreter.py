@@ -155,7 +155,7 @@ def _predict_tree(model, X):
     direct_prediction = values[leaves]
 
     # make into python list, accessing values will be faster
-    values_list = list(values)
+    values_list = values
     feature_index = list(model.tree_.feature)
 
     unique_leaves = np.unique(leaves)
