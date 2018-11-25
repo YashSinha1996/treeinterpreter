@@ -6,6 +6,7 @@ from scipy.sparse import csr_matrix
 from sklearn.ensemble.forest import ForestClassifier, ForestRegressor
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, _tree
 from distutils.version import LooseVersion
+from sklearn.externals.joblib import Parallel, delayed
 
 if LooseVersion(sklearn.__version__) < LooseVersion("0.17"):
     raise Exception("treeinterpreter requires scikit-learn 0.17 or later")
@@ -194,8 +195,8 @@ def _predict_forest(model, X):
 
     num_trees = len(model.estimators_)
     first = True
-    for tree in model.estimators_:
-        pred, contribution = _predict_tree(tree, X)
+    cont_per_tree = Parallel(n_jobs=-1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
+    for pred, contribution in cont_per_tree:
 
         if first:
             contributions = contribution / num_trees
@@ -215,7 +216,7 @@ def _predict_forest(model, X):
     return predictions, biases, contributions
 
 
-def predict(model, X, joint_contribution=False):
+def predict(model, X):
     """ Returns a triple (prediction, bias, feature_contributions), such
     that prediction ≈ bias + feature_contributions.
     Parameters
