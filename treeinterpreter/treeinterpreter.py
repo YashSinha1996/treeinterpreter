@@ -7,6 +7,7 @@ from sklearn.ensemble.forest import ForestClassifier, ForestRegressor
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, _tree
 from distutils.version import LooseVersion
 from sklearn.externals.joblib import Parallel, delayed
+from tqdm import tqdm
 
 if LooseVersion(sklearn.__version__) < LooseVersion("0.17"):
     raise Exception("treeinterpreter requires scikit-learn 0.17 or later")
@@ -162,7 +163,7 @@ def _predict_tree(model, X):
     unique_leaves = np.unique(leaves)
     unique_contributions = {}
 
-    for row, leaf in enumerate(unique_leaves):
+    for row, leaf in tqdm(enumerate(unique_leaves)):
         path = None
         for poss_path in paths:
             path = poss_path
@@ -170,7 +171,7 @@ def _predict_tree(model, X):
                 break
 
         contribs = csr_matrix(line_shape)
-        for i in range(len(path) - 1):
+        for i in tqdm(range(len(path) - 1)):
             contrib = values_list[path[i + 1]] - \
                       values_list[path[i]]
             contribs[feature_index[path[i]]] += contrib
@@ -195,7 +196,7 @@ def _predict_forest(model, X):
 
     num_trees = len(model.estimators_)
     first = True
-    cont_per_tree = Parallel(n_jobs=-1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
+    cont_per_tree = Parallel(n_jobs=1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
     for pred, contribution in cont_per_tree:
 
         if first:
