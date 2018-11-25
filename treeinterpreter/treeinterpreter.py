@@ -167,11 +167,11 @@ def _predict_tree(model, X):
 
     avg_contrib = None
 
-    for row, leaf in tqdm(enumerate(unique_leaves), disable=True):
+    for row, leaf in tqdm(enumerate(unique_leaves)):
         path = leaf_to_path[leaf]
 
         contribs = csr_matrix(line_shape)
-        for i in tqdm(range(len(path) - 1), disable=True):
+        for i in tqdm(range(len(path) - 1)):
             contrib = values_list[path[i + 1]] - \
                       values_list[path[i]]
             contribs[feature_index[path[i]]] += contrib
