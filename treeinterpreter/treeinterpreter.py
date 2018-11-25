@@ -163,12 +163,10 @@ def _predict_tree(model, X):
     unique_leaves = np.unique(leaves)
     unique_contributions = {}
 
+    print(unique_leaves.shape, len(leaves))
+
     for row, leaf in tqdm(enumerate(unique_leaves)):
-        path = None
-        for poss_path in paths:
-            path = poss_path
-            if leaf == poss_path[-1]:
-                break
+        path = leaf_to_path[leaf]
 
         contribs = csr_matrix(line_shape)
         for i in tqdm(range(len(path) - 1)):
@@ -177,7 +175,7 @@ def _predict_tree(model, X):
             contribs[feature_index[path[i]]] += contrib
         unique_contributions[leaf] = contribs
 
-    avg_contib = sum([unique_contributions[leaf] for leaf in unique_contributions]) / len(unique_contributions)
+    # avg_contib = sum([unique_contributions[leaf] for leaf in unique_contributions]) / len(unique_contributions)
 
     # return direct_prediction, biases, contributions
     return direct_prediction, avg_contib
