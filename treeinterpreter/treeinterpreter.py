@@ -117,12 +117,12 @@ def _get_tree_paths(tree, node_id, depth=0):
 #
 #         return direct_prediction, biases, np.mean(contributions, axis=0)
 
-def _get_tree_contribs(values, path, shape_req):
+def _get_tree_contribs(values, feature_index, path, shape_req):
     contribs = csr_matrix(shape_req)
     for i in range(len(path) - 1):
         contrib = values[path[i + 1]] - \
                   values[path[i]]
-        contribs[values[path[i]]] += contrib
+        contribs[feature_index[path[i]]] += contrib
     return contribs
 
 
@@ -170,12 +170,11 @@ def _predict_tree(model, X):
     feature_index = model.tree_.feature
 
     unique_leaves = np.unique(leaves)
-    unique_contributions = {}
 
     print(unique_leaves.shape, len(leaves))
 
     contribs_total = Parallel(n_jobs=180)(delayed(_get_tree_contribs)
-                                                           (values_list, leaf_to_path[leaf], line_shape)
+                                                           (values_list, feature_index, leaf_to_path[leaf], line_shape)
                                                            for leaf in unique_leaves)
     # for row, leaf in enumerate(unique_leaves):
     #     path = leaf_to_path[leaf]
