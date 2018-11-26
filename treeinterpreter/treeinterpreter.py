@@ -123,7 +123,7 @@ def _get_tree_contribs(values, feature_index, path, shape_req, leaf):
         contrib = values[path[i + 1]] - \
                   values[path[i]]
         contribs[feature_index[path[i]]] += contrib
-    return leaf, contribs
+    return contribs
 
 
 def _predict_tree(model, X):
@@ -169,17 +169,17 @@ def _predict_tree(model, X):
     values_list = values
     feature_index = model.tree_.feature
 
-    unique_leaves = np.unique(leaves)
+    unique_leaves, leaf_counts = np.unique(leaves, return_counts=True)
 
-    print(unique_leaves.shape, len(leaves))
+    print(unique_leaves.shape, len(leaves), len(leaf_counts))
 
     contribs_total = Parallel(n_jobs=2*cpu_count())(delayed(_get_tree_contribs)
                                         (values_list, feature_index, leaf_to_path[leaf], line_shape, leaf)
                                         for leaf in unique_leaves)
-    unique_contributions = dict(contribs_total)
     contributions = csr_matrix(line_shape)
-    for row, leaf in enumerate(leaves):
-        contributions += unique_contributions[leaf]
+    for row, leaf in enumerate(contribs_total):
+        contributions += contribs_total[row] * leaf_counts[row]
+
     # for row, leaf in enumerate(unique_leaves):
     #     path = leaf_to_path[leaf]
     #
