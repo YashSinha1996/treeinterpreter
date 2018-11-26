@@ -187,7 +187,7 @@ def _predict_tree(model, X):
     #         contribs[feature_index[path[i]]] += contrib
     #     return contribs
 
-    avg_contrib = np.mean(contribs_total)
+    avg_contrib = sum(contribs_total)/len(contribs_total)
     # return direct_prediction, biases, contributions
     return avg_contrib
 
