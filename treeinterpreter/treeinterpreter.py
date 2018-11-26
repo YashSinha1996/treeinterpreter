@@ -6,7 +6,7 @@ from scipy.sparse import csr_matrix
 from sklearn.ensemble.forest import ForestClassifier, ForestRegressor
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, _tree
 from distutils.version import LooseVersion
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, cpu_count
 from tqdm import tqdm
 
 if LooseVersion(sklearn.__version__) < LooseVersion("0.17"):
@@ -117,13 +117,13 @@ def _get_tree_paths(tree, node_id, depth=0):
 #
 #         return direct_prediction, biases, np.mean(contributions, axis=0)
 
-def _get_tree_contribs(values, feature_index, path, shape_req):
+def _get_tree_contribs(values, feature_index, path, shape_req, leaf):
     contribs = csr_matrix(shape_req)
     for i in range(len(path) - 1):
         contrib = values[path[i + 1]] - \
                   values[path[i]]
         contribs[feature_index[path[i]]] += contrib
-    return contribs
+    return leaf, contribs
 
 
 def _predict_tree(model, X):
@@ -173,9 +173,13 @@ def _predict_tree(model, X):
 
     print(unique_leaves.shape, len(leaves))
 
-    contribs_total = Parallel(n_jobs=180)(delayed(_get_tree_contribs)
-                                                           (values_list, feature_index, leaf_to_path[leaf], line_shape)
-                                                           for leaf in unique_leaves)
+    contribs_total = Parallel(n_jobs=2*cpu_count())(delayed(_get_tree_contribs)
+                                        (values_list, feature_index, leaf_to_path[leaf], line_shape, leaf)
+                                        for leaf in unique_leaves)
+    unique_contributions = dict(contribs_total)
+    contributions = csr_matrix(line_shape)
+    for row, leaf in enumerate(leaves):
+        contributions += unique_contributions[leaf]
     # for row, leaf in enumerate(unique_leaves):
     #     path = leaf_to_path[leaf]
     #
@@ -186,9 +190,9 @@ def _predict_tree(model, X):
     #         contribs[feature_index[path[i]]] += contrib
     #     return contribs
 
-    avg_contrib = sum(contribs_total)/len(contribs_total)
+    # avg_contrib = sum(contribs_total)/len(contribs_total)
     # return direct_prediction, biases, contributions
-    return avg_contrib
+    return contributions
 
 
 def _predict_forest(model, X):
@@ -206,7 +210,7 @@ def _predict_forest(model, X):
     contributions = csr_matrix(line_shape)
     for tree in model.estimators_:
         contribution = _predict_tree(tree, X)
-        contributions += contribution
+        contributions = contributions + contribution
         # print(contributions, contribution, num_trees)
         # input()
 
