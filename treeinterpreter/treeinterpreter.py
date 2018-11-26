@@ -173,7 +173,7 @@ def _predict_tree(model, X):
 
     print(unique_leaves.shape, len(leaves))
 
-    contribs_total = Parallel(n_jobs=360)(delayed(_get_tree_contribs)
+    contribs_total = Parallel(n_jobs=180)(delayed(_get_tree_contribs)
                                                            (values_list, feature_index, leaf_to_path[leaf], line_shape)
                                                            for leaf in unique_leaves)
     # for row, leaf in enumerate(unique_leaves):
