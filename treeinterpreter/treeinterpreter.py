@@ -117,6 +117,15 @@ def _get_tree_paths(tree, node_id, depth=0):
 #
 #         return direct_prediction, biases, np.mean(contributions, axis=0)
 
+def _get_tree_contribs(values, path, shape_req):
+    contribs = csr_matrix(shape_req)
+    for i in range(len(path) - 1):
+        contrib = values[path[i + 1]] - \
+                  values[path[i]]
+        contribs[values[path[i]]] += contrib
+    return contribs
+
+
 def _predict_tree(model, X):
     """
     For a given DecisionTreeRegressor, DecisionTreeClassifier,
@@ -165,23 +174,20 @@ def _predict_tree(model, X):
 
     print(unique_leaves.shape, len(leaves))
 
-    avg_contrib = None
+    contribs_total = Parallel(n_jobs=-1, prefer='threads')(delayed(_get_tree_contribs)
+                                                           (values_list, leaf_to_path[leaf], line_shape)
+                                                           for leaf in unique_leaves)
+    # for row, leaf in enumerate(unique_leaves):
+    #     path = leaf_to_path[leaf]
+    #
+    #     contribs = csr_matrix(line_shape)
+    #     for i in range(len(path) - 1):
+    #         contrib = values_list[path[i + 1]] - \
+    #                   values_list[path[i]]
+    #         contribs[feature_index[path[i]]] += contrib
+    #     return contribs
 
-    for row, leaf in enumerate(unique_leaves):
-        path = leaf_to_path[leaf]
-
-        contribs = csr_matrix(line_shape)
-        for i in range(len(path) - 1):
-            contrib = values_list[path[i + 1]] - \
-                      values_list[path[i]]
-            contribs[feature_index[path[i]]] += contrib
-        unique_contributions[leaf] = contribs
-        if avg_contrib is None:
-            avg_contrib = contribs
-        else:
-            avg_contrib += contribs
-
-    avg_contrib = avg_contrib/len(unique_leaves)
+    avg_contrib = sum(contribs_total) / len(contribs_total)
     # return direct_prediction, biases, contributions
     return direct_prediction, avg_contrib
 
@@ -199,7 +205,7 @@ def _predict_forest(model, X):
 
     num_trees = len(model.estimators_)
     first = True
-    cont_per_tree = Parallel(n_jobs=-1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
+    cont_per_tree = Parallel(n_jobs=1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
     for pred, contribution in cont_per_tree:
 
         if first:
