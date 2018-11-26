@@ -6,7 +6,7 @@ from scipy.sparse import csr_matrix
 from sklearn.ensemble.forest import ForestClassifier, ForestRegressor
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, _tree
 from distutils.version import LooseVersion
-from sklearn.externals.joblib import Parallel, delayed
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
 if LooseVersion(sklearn.__version__) < LooseVersion("0.17"):
