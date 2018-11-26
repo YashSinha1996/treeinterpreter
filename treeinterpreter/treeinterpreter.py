@@ -200,22 +200,18 @@ def _predict_forest(model, X):
     feature_contributions.
     """
     biases = []
-    contributions = []
     predictions = []
 
     num_trees = len(model.estimators_)
-    first = True
-    # cont_per_tree = Parallel(n_jobs=1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
+    line_shape = (X.shape[1], model.n_classes_)
+    contributions = csr_matrix(line_shape)
     for tree in model.estimators_:
         contribution = _predict_tree(tree, X)
-        if first:
-            contributions = contribution / num_trees
-        else:
-            contributions += contribution / num_trees
+        contributions += contribution
+        print(contributions, contribution, num_trees)
+        input()
 
-        first = False
-
-        print(contributions, contribution, num_trees, )
+    contributions = contributions / num_trees
 
     # return (np.mean(predictions, axis=0), np.mean(biases, axis=0),
     #         np.mean(contributions, axis=0))
