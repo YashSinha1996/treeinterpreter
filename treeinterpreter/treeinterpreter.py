@@ -187,9 +187,9 @@ def _predict_tree(model, X):
     #         contribs[feature_index[path[i]]] += contrib
     #     return contribs
 
-    avg_contrib = sum(contribs_total) / len(contribs_total)
+    avg_contrib = np.mean(contribs_total)
     # return direct_prediction, biases, contributions
-    return direct_prediction, avg_contrib
+    return avg_contrib
 
 
 def _predict_forest(model, X):
@@ -205,21 +205,17 @@ def _predict_forest(model, X):
 
     num_trees = len(model.estimators_)
     first = True
-    cont_per_tree = Parallel(n_jobs=1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
-    for pred, contribution in cont_per_tree:
-
+    # cont_per_tree = Parallel(n_jobs=1)(delayed(_predict_tree)(tree, X) for tree in model.estimators_)
+    for tree in model.estimators_:
+        contribution = _predict_tree(tree, X)
         if first:
             contributions = contribution / num_trees
-            predictions = pred / num_trees
         else:
             contributions += contribution / num_trees
-            predictions += pred / num_trees
 
         first = False
-        #
-        # biases.append(bias)
-        # contributions.append(contribution)
-        # predictions.append(pred)
+
+        print(contributions, contribution, num_trees, )
 
     # return (np.mean(predictions, axis=0), np.mean(biases, axis=0),
     #         np.mean(contributions, axis=0))
