@@ -193,8 +193,8 @@ def _predict_tree(model, X, joint_contribution=False):
         contribs_total = Parallel(n_jobs=2*cpu_count())(delayed(_get_tree_contribs)
                                             (values_list, feature_index, leaf_to_path[leaf], line_shape)
                                             for leaf in unique_leaves)
-        contributions = csr_matrix(line_shape)
-    for row, leaf in enumerate(contribs_total):
+        contributions = []
+    for row, leaf in enumerate(leaves):
         contributions = contributions + (contribs_total[row] * leaf_counts[row])
     # for row, leaf in enumerate(unique_leaves):
     #     path = leaf_to_path[leaf]

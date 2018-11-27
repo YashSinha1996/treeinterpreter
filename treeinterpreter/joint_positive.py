@@ -39,7 +39,7 @@ def _get_tree_paths(tree, node_id, depth=0):
     return paths
 
 
-def _predict_tree(model, X, joint_contribution=False, positive_threshold=-1):
+def _predict_tree(model, X, joint_contribution=False, positive_threshold=None):
     """
     For a given DecisionTreeRegressor, DecisionTreeClassifier,
     ExtraTreeRegressor, or ExtraTreeClassifier,
@@ -216,7 +216,7 @@ def predict(model, X, joint_contribution=False, positive_threshold=None):
         return _predict_tree(model, X, joint_contribution=joint_contribution, positive_threshold=positive_threshold)
     elif (isinstance(model, ForestClassifier) or
           isinstance(model, ForestRegressor)):
-        return _predict_forest(model, X, joint_contribution=joint_contribution)
+        return _predict_forest(model, X, joint_contribution=joint_contribution, positive_threshold=positive_threshold)
     else:
         raise ValueError("Wrong model type. Base learner needs to be a "
                          "DecisionTreeClassifier or DecisionTreeRegressor.")
