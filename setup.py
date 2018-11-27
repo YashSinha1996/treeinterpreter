@@ -23,7 +23,7 @@ test_requirements = [
 ]
 
 setup(
-    name='treeinterpretermod',
+    name='treeinterpreter',
     version='0.2.2',
     description="Package for interpreting scikit-learn's decision tree and random forest predictions.",
     long_description=readme + '\n\n' + history,
