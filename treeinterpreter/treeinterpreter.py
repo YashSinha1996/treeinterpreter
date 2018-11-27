@@ -7,6 +7,7 @@ from sklearn.ensemble.forest import ForestClassifier, ForestRegressor
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, _tree
 from distutils.version import LooseVersion
 from joblib import Parallel, delayed, cpu_count
+from treeinterpreter.utils import MultiCount
 from tqdm import tqdm
 
 if LooseVersion(sklearn.__version__) < LooseVersion("0.17"):
@@ -117,16 +118,28 @@ def _get_tree_paths(tree, node_id, depth=0):
 #
 #         return direct_prediction, biases, np.mean(contributions, axis=0)
 
-def _get_tree_contribs(values, feature_index, path, shape_req, leaf):
+def _get_tree_contribs(values, feature_index, path, shape_req):
     contribs = csr_matrix(shape_req)
     for i in range(len(path) - 1):
         contrib = values[path[i + 1]] - \
                   values[path[i]]
         contribs[feature_index[path[i]]] += contrib
-    return leaf, contribs
+    return contribs
 
 
-def _predict_tree(model, X):
+def _get_tree_joint_contribs(values, feature_index, path):
+    contribs = MultiCount()
+    path_features = set()
+    for i in range(len(path) - 1):
+        path_features.add(feature_index[path[i]])
+        contrib = values[path[i + 1]] - \
+                  values[path[i]]
+        key = tuple(sorted(path_features))
+        contribs[key] = contribs[key] + contrib
+    return contribs
+
+
+def _predict_tree(model, X, joint_contribution=False):
     """
     For a given DecisionTreeRegressor, DecisionTreeClassifier,
     ExtraTreeRegressor, or ExtraTreeClassifier,
@@ -168,18 +181,21 @@ def _predict_tree(model, X):
     # make into python list, accessing values will be faster
     values_list = values
     feature_index = model.tree_.feature
-
-    unique_leaves = np.unique(leaves)
-
+    unique_leaves, leaf_counts = np.unique(leaves, return_counts=True)
     print(unique_leaves.shape, len(leaves))
 
-    contribs_total = Parallel(n_jobs=2*cpu_count())(delayed(_get_tree_contribs)
-                                        (values_list, feature_index, leaf_to_path[leaf], line_shape, leaf)
-                                        for leaf in unique_leaves)
-    unique_contributions = dict(contribs_total)
-    contributions = csr_matrix(line_shape)
-    for row, leaf in enumerate(leaves):
-        contributions += unique_contributions[leaf]
+    if joint_contribution:
+        contributions = MultiCount()
+        contribs_total = Parallel(n_jobs=2 * cpu_count())(delayed(_get_tree_joint_contribs)
+                                                          (values_list, feature_index, leaf_to_path[leaf])
+                                                          for leaf in unique_leaves)
+    else:
+        contribs_total = Parallel(n_jobs=2*cpu_count())(delayed(_get_tree_contribs)
+                                            (values_list, feature_index, leaf_to_path[leaf], line_shape)
+                                            for leaf in unique_leaves)
+        contributions = csr_matrix(line_shape)
+    for row, leaf in enumerate(contribs_total):
+        contributions = contributions + (contribs_total[row] * leaf_counts[row])
     # for row, leaf in enumerate(unique_leaves):
     #     path = leaf_to_path[leaf]
     #
