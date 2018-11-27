@@ -182,7 +182,7 @@ def _predict_tree(model, X, joint_contribution=False):
     values_list = values
     feature_index = model.tree_.feature
     unique_leaves, leaf_counts = np.unique(leaves, return_counts=True)
-    print(unique_leaves.shape, len(leaves))
+    # print(unique_leaves.shape, len(leaves))
 
     if joint_contribution:
         contributions = MultiCount()
