@@ -193,7 +193,7 @@ def _predict_tree(model, X, joint_contribution=False):
         contribs_total = Parallel(n_jobs=2*cpu_count())(delayed(_get_tree_contribs)
                                             (values_list, feature_index, leaf_to_path[leaf], line_shape)
                                             for leaf in unique_leaves)
-        contributions = []
+        contributions = csr_matrix(line_shape)
     for row, leaf in enumerate(leaves):
         contributions = contributions + (contribs_total[row] * leaf_counts[row])
     # for row, leaf in enumerate(unique_leaves):
@@ -224,7 +224,7 @@ def _predict_forest(model, X):
     num_trees = len(model.estimators_)
     line_shape = (X.shape[1], model.n_classes_)
     contributions = csr_matrix(line_shape)
-    for tree in model.estimators_:
+    for tree in tqdm(model.estimators_):
         contribution = _predict_tree(tree, X)
         contributions = contributions + contribution
         # print(contributions, contribution, num_trees)

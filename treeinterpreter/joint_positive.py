@@ -5,6 +5,7 @@ import sklearn
 from sklearn.ensemble.forest import ForestClassifier, ForestRegressor
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, _tree
 from distutils.version import LooseVersion
+from tqdm import tqdm
 
 if LooseVersion(sklearn.__version__) < LooseVersion("0.17"):
     raise Exception("treeinterpreter requires scikit-learn 0.17 or later")
@@ -84,7 +85,7 @@ def _predict_tree(model, X, joint_contribution=False, positive_threshold=None):
 
     contributions = []
     if joint_contribution:
-        for row, leaf in enumerate(leaves):
+        for row, leaf in tqdm(enumerate(leaves)):
             path = leaf_to_path[leaf]
 
             path_features = set()
