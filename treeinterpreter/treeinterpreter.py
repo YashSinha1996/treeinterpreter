@@ -8,7 +8,7 @@ from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, _tree
 from distutils.version import LooseVersion
 from joblib import Parallel, delayed, cpu_count
 from treeinterpreter.utils import MultiCount
-from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdm
 
 if LooseVersion(sklearn.__version__) < LooseVersion("0.17"):
     raise Exception("treeinterpreter requires scikit-learn 0.17 or later")
@@ -194,7 +194,7 @@ def _predict_tree(model, X, joint_contribution=False):
                                             (values_list, feature_index, leaf_to_path[leaf], line_shape)
                                             for leaf in unique_leaves)
         contributions = csr_matrix(line_shape)
-    for row, leaf in enumerate(leaves):
+    for row, leaf in enumerate(unique_leaves):
         contributions = contributions + (contribs_total[row] * leaf_counts[row])
     # for row, leaf in enumerate(unique_leaves):
     #     path = leaf_to_path[leaf]
