@@ -93,6 +93,7 @@ def _predict_tree(model, X, joint_contribution=False, positive_threshold=None):
             for i in range(len(path) - 1):
 
                 if take_positives and _is_node_positive(thresholds, path[i], positive_threshold) and X[row][feature_index[path[i]]] is not 0:
+                    print(X[row][feature_index[path[i]]])
                     path_features.add(feature_index[path[i]])
                 elif not take_positives:
                     path_features.add(feature_index[path[i]])
